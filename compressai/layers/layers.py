@@ -23,15 +23,17 @@ class MaskedConv2d(nn.Conv2d):
         # self.register_buffer('mask', torch.ones_like(self.weight.data))
         # change
         self.register_buffer('mask', ops.OnesLike(self.weight.data))
-        _, _, h, w = self.mask.size()
+        # _, _, h, w = self.mask.size()
+        # change
+        _, _, h, w = self.mask.shape
         self.mask[:, :, h // 2, w // 2 + (mask_type == 'B'):] = 0
         self.mask[:, :, h // 2 + 1:] = 0
 
-    def forward(self, x):
+    def construct(self, x):
         # TODO(begaintj): weight assigment is not supported by torchscript
         # original TODO, not by J
         self.weight.data *= self.mask
-        return super().forward(x)
+        return super().construct(x)
 
 
 def conv3x3(in_ch, out_ch, stride=1):
@@ -43,7 +45,6 @@ def subpel_conv3x3(in_ch, out_ch, r=1):
     """3x3 sub-pixel convolution for up-sampling."""
     # return nn.Sequential(
     #     nn.Conv2d(in_ch, out_ch * r**2, kernel_size=3, padding=1),
-    #     # TODO BY J : no pixel shuffle in mindspore
     #     nn.PixelShuffle(r))
     # change
     return nn.SequentialCell([nn.Conv2d(in_ch, out_ch * r**2, kernel_size=3, padding=1),
@@ -78,7 +79,7 @@ class ResidualBlockWithStride(nn.Cell):
         else:
             self.downsample = None
 
-    def forward(self, x):
+    def construct(self, x):
         identity = x
         out = self.conv1(x)
         out = self.leaky_relu(out)
@@ -110,7 +111,7 @@ class ResidualBlockUpsample(nn.Cell):
         self.igdn = GDN(out_ch, inverse=True)
         self.upsample = subpel_conv3x3(in_ch, out_ch, upsample)
 
-    def forward(self, x):
+    def construct(self, x):
         identity = x
         out = self.subpel_conv(x)
         out = self.leaky_relu(out)
@@ -136,7 +137,7 @@ class ResidualBlock(nn.Cell):
         self.leaky_relu = nn.LeakyReLU()
         self.conv2 = conv3x3(out_ch, out_ch)
 
-    def forward(self, x):
+    def construct(self, x):
         identity = x
 
         out = self.conv1(x)
@@ -185,7 +186,7 @@ class AttentionBlock(nn.Cell):
                 # change
                 self.relu = nn.ReLU()
 
-            def forward(self, x):
+            def construct(self, x):
                 identity = x
                 out = self.conv(x)
                 out += identity
@@ -213,7 +214,7 @@ class AttentionBlock(nn.Cell):
             conv1x1(N, N),
         ])
 
-    def forward(self, x):
+    def construct(self, x):
         identity = x
         a = self.conv_a(x)
         b = self.conv_b(x)

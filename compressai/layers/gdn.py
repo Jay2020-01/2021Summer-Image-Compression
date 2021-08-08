@@ -64,14 +64,14 @@ class GDN(nn.Cell):
         # change
         self.gamma = mindspore.Parameter(gamma)
 
-    def forward(self, x):
+    def construct(self, x):
         _, C, _, _ = x.size()
 
         beta = self.beta_reparam(self.beta)
         gamma = self.gamma_reparam(self.gamma)
         gamma = gamma.reshape(C, C, 1, 1)
         # norm = F.conv2d(x**2, gamma, beta)
-        # change TODO: not sure
+        # change TODO BY J: not sure
         norm = ops.Conv2D(x**2, gamma, out_channel=gamma.shape[0], kernel_size=gamma.shape[2]) + beta
 
         if self.inverse:
@@ -99,14 +99,14 @@ class GDN1(GDN):
         y[i] = \frac{x[i]}{\beta[i] + \sum_j(\gamma[j, i] * |x[j]|}
 
     """
-    def forward(self, x):
+    def construct(self, x):
         _, C, _, _ = x.size()
 
         beta = self.beta_reparam(self.beta)
         gamma = self.gamma_reparam(self.gamma)
         gamma = gamma.reshape(C, C, 1, 1)
         # norm = F.conv2d(torch.abs(x), gamma, beta)
-        # change TODO: not sure
+        # change TODO BY J: not sure
         norm = ops.Conv2D(mindspore.Tensor.abs(x), gamma, out_channel=gamma.shape[0], kernel_size=gamma.shape[2]) + beta
 
         if not self.inverse:
