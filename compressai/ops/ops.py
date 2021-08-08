@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import torch
+# import torch
+import mindspore.ops as ops
 
 
 def ste_round(x):
@@ -28,4 +29,7 @@ def ste_round(x):
 
         `x_round = x_round - x.detach() + x`
     """
-    return torch.round(x) - x.detach() + x
+    # return torch.round(x) - x.detach() + x TODO BY J: no detach
+    # change
+    round = ops.Round()
+    return round(x)

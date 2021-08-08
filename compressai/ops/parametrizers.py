@@ -12,13 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import torch
-import torch.nn as nn
+# import torch
+# import torch.nn as nn
+import mindspore
+from mindspore import Tensor
+import mindspore.nn as nn
+import mindspore.ops as ops
 
 from .bound_ops import LowerBound
 
 
-class NonNegativeParametrizer(nn.Module):
+class NonNegativeParametrizer(nn.Cell):
     """
     Non negative reparametrization.
 
@@ -31,12 +35,16 @@ class NonNegativeParametrizer(nn.Module):
         self.reparam_offset = float(reparam_offset)
 
         pedestal = self.reparam_offset**2
-        self.register_buffer('pedestal', torch.Tensor([pedestal]))
+        # self.register_buffer('pedestal', torch.Tensor([pedestal]))
+        # change TODO BY J: no register
+        self.pedestal = Tensor([pedestal], mindspore.float32)
         bound = (self.minimum + self.reparam_offset**2)**.5
         self.lower_bound = LowerBound(bound)
 
     def init(self, x):
-        return torch.sqrt(torch.max(x + self.pedestal, self.pedestal))
+        sqrt = ops.Sqrt()
+        max = ops.Max()
+        return sqrt(max(x + self.pedestal, self.pedestal))
 
     def forward(self, x):
         out = self.lower_bound(x)

@@ -14,8 +14,8 @@ import cv2
 from typing import Any, Callable, List, Optional, Tuple, Union
 
 # 在这里改GMM计算方式
-# from compressai.entropy_models import (EntropyBottleneck, GaussianMixtureConditional, GaussianConditional)
-# from compressai.layers import GDN, MaskedConv2d
+from compressai.entropy_models import (EntropyBottleneck, GaussianMixtureConditional, GaussianConditional)
+from compressai.layers import GDN, MaskedConv2d
 # from compressai.ans impor  t BufferedRansEncoder, RansDecoder  # pylint: disable=E0611,E0401
 # from compressai.models.utils import update_registered_buffers, conv, deconv
 
@@ -45,77 +45,77 @@ import time
 '''以下为凑数内容'''
 
 
-class EntropyModel(nn.Cell):
-    def __init__(self,
-                 likelihood_bound=1e-9,
-                 entropy_coder=None,
-                 entropy_coder_precision=16):
-        super().__init__()
-
-    def compress(self, input=1):
-        return input
-
-    def decompress(self, output=2):
-        return output
-
-
-class EntropyBottleneck(EntropyModel):
-    def __init__(
-            self,
-            channels: int,
-            *args: Any,
-            tail_mass: float = 1e-9,
-            init_scale: float = 10,
-            filters: Tuple[int, ...] = (3, 3, 3, 3),
-            **kwargs: Any,
-    ):
-        super().__init__()
-        self.channels = int(channels)
-        self.filters = tuple(int(f) for f in filters)
-        self.init_scale = float(init_scale)
-        self.tail_mass = float(tail_mass)
-
-    def construct(self, input):
-        hat = input
-        likelihoods = input
-        return hat, likelihoods
-
-
-class GaussianMixtureConditional(EntropyModel):
-    def __init__(self,
-                 K,
-                 scale_table=None,
-                 mean_table=None,
-                 weight_table=None,
-                 *args,
-                 scale_bound=0.11,
-                 tail_mass=1e-9,
-                 **kwargs):
-        super().__init__(*args, **kwargs)
-
-        # ywz for mixture numbers:K
-        self.K = K
-
-    def construct(self, input, gmm1, gmm2, gmm3):
-        hat = input
-        likeliloods = input
-        return hat, likeliloods
-
-
-class GDN(nn.Cell):
-    def __init__(self,
-                 in_channels,
-                 inverse=False,
-                 beta_min=1e-6,
-                 gamma_init=0.1):
-        super().__init__()
-
-        beta_min = float(beta_min)
-        gamma_init = float(gamma_init)
-        self.inverse = bool(inverse)
-
-    def construct(self, x):
-        return x
+# class EntropyModel(nn.Cell):
+#     def __init__(self,
+#                  likelihood_bound=1e-9,
+#                  entropy_coder=None,
+#                  entropy_coder_precision=16):
+#         super().__init__()
+#
+#     def compress(self, input=1):
+#         return input
+#
+#     def decompress(self, output=2):
+#         return output
+#
+#
+# class EntropyBottleneck(EntropyModel):
+#     def __init__(
+#             self,
+#             channels: int,
+#             *args: Any,
+#             tail_mass: float = 1e-9,
+#             init_scale: float = 10,
+#             filters: Tuple[int, ...] = (3, 3, 3, 3),
+#             **kwargs: Any,
+#     ):
+#         super().__init__()
+#         self.channels = int(channels)
+#         self.filters = tuple(int(f) for f in filters)
+#         self.init_scale = float(init_scale)
+#         self.tail_mass = float(tail_mass)
+#
+#     def construct(self, input):
+#         hat = input
+#         likelihoods = input
+#         return hat, likelihoods
+#
+#
+# class GaussianMixtureConditional(EntropyModel):
+#     def __init__(self,
+#                  K,
+#                  scale_table=None,
+#                  mean_table=None,
+#                  weight_table=None,
+#                  *args,
+#                  scale_bound=0.11,
+#                  tail_mass=1e-9,
+#                  **kwargs):
+#         super().__init__(*args, **kwargs)
+#
+#         # ywz for mixture numbers:K
+#         self.K = K
+#
+#     def construct(self, input, gmm1, gmm2, gmm3):
+#         hat = input
+#         likeliloods = input
+#         return hat, likeliloods
+#
+#
+# class GDN(nn.Cell):
+#     def __init__(self,
+#                  in_channels,
+#                  inverse=False,
+#                  beta_min=1e-6,
+#                  gamma_init=0.1):
+#         super().__init__()
+#
+#         beta_min = float(beta_min)
+#         gamma_init = float(gamma_init)
+#         self.inverse = bool(inverse)
+#
+#     def construct(self, x):
+#         return x
 
 
 def conv(in_channels, out_channels, kernel_size=5, stride=2):

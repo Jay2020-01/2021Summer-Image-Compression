@@ -20,9 +20,10 @@ class MaskedConv2d(nn.Conv2d):
         if mask_type not in ('A', 'B'):
             raise ValueError(f'Invalid "mask_type" value "{mask_type}"')
 
-        # self.register_buffer('mask', torch.ones_like(self.weight.data))
+        # self.register_buffer('mask', torch.ones_like(self.weight.data)) TODO: no register in mindspore
         # change
-        self.register_buffer('mask', ops.OnesLike(self.weight.data))
+        onesLike = ops.OnesLike()
+        self.mask = onesLike(self.weight.data)
         # _, _, h, w = self.mask.size()
         # change
         _, _, h, w = self.mask.shape

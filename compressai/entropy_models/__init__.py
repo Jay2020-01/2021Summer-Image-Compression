@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .entropy_models import (EntropyBottleneck, EntropyModel,
-                             GaussianConditional, GaussianMixtureConditional)
+# from .entropy_models import (EntropyBottleneck, EntropyModel,
+#                              GaussianConditional, GaussianMixtureConditional)
+# change
+from .entropy_models import (EntropyBottleneck, EntropyModel, GaussianMixtureConditional)
 
 __all__ = [
     'EntropyModel',
     'EntropyBottleneck',
-    'GaussianConditional',
+    # 'GaussianConditional',
     #ywz
     'GaussianMixtureConditional',
 ]

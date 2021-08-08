@@ -47,7 +47,8 @@ class GDN(nn.Cell):
         self.beta_reparam = NonNegativeParametrizer(minimum=beta_min)
         # beta = torch.ones(in_channels)
         # change
-        beta = ops.Ones(in_channels, mindspore.float32)
+        ones = ops.Ones()
+        beta = ones(in_channels, mindspore.float32)
 
         beta = self.beta_reparam.init(beta)
         # self.beta = nn.Parameter(beta)
@@ -57,7 +58,8 @@ class GDN(nn.Cell):
         self.gamma_reparam = NonNegativeParametrizer()
         # gamma = gamma_init * torch.eye(in_channels)
         # change
-        gamma = gamma_init * ops.Eye(in_channels, in_channels, mindspore.float32)
+        eye = ops.Eye()
+        gamma = gamma_init * eye(in_channels, in_channels, mindspore.float32)
 
         gamma = self.gamma_reparam.init(gamma)
         # self.gamma = nn.Parameter(gamma)
@@ -65,23 +67,26 @@ class GDN(nn.Cell):
         self.gamma = mindspore.Parameter(gamma)
 
     def construct(self, x):
-        _, C, _, _ = x.size()
+        _, C, _, _ = x.shape
 
         beta = self.beta_reparam(self.beta)
         gamma = self.gamma_reparam(self.gamma)
         gamma = gamma.reshape(C, C, 1, 1)
         # norm = F.conv2d(x**2, gamma, beta)
         # change TODO BY J: not sure
-        norm = ops.Conv2D(x**2, gamma, out_channel=gamma.shape[0], kernel_size=gamma.shape[2]) + beta
+        conv2d = ops.Conv2D()
+        norm = conv2d(x**2, gamma, out_channel=gamma.shape[0], kernel_size=gamma.shape[2]) + beta
 
         if self.inverse:
             # norm = torch.sqrt(norm)
             # change
-            norm = ops.Sqrt(norm)
+            sqrt = ops.Sqrt()
+            norm = sqrt(norm)
         else:
             # norm = torch.rsqrt(norm)
             # change
-            norm = ops.Rsqrt(norm)
+            rsqrt = ops.Rsqrt()
+            norm = rsqrt(norm)
 
         out = x * norm
 
@@ -107,7 +112,8 @@ class GDN1(GDN):
         gamma = gamma.reshape(C, C, 1, 1)
         # norm = F.conv2d(torch.abs(x), gamma, beta)
         # change TODO BY J: not sure
-        norm = ops.Conv2D(mindspore.Tensor.abs(x), gamma, out_channel=gamma.shape[0], kernel_size=gamma.shape[2]) + beta
+        conv2d = ops.Conv2D()
+        norm = conv2d(mindspore.Tensor.abs(x), gamma, out_channel=gamma.shape[0], kernel_size=gamma.shape[2]) + beta
 
         if not self.inverse:
             norm = 1. / norm
@@ -115,3 +121,11 @@ class GDN1(GDN):
         out = x * norm
 
         return out
+
+
+if __name__ == '__main__':
+    a = GDN(192)
+    zeros = ops.Zeros()
+    x = zeros((192,192,2,2), mindspore.float32)
+    y = a.construct(x)
+    print(y.size())

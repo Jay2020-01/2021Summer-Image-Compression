@@ -129,7 +129,8 @@ class EntropyModel(nn.Cell):
 
         # outputs = torch.round(outputs)
         # change
-        outputs = ops.Round(outputs)
+        round = ops.Round()
+        outputs = round(outputs)
 
         if mode == 'dequantize':
             if means is not None:
@@ -152,11 +153,13 @@ class EntropyModel(nn.Cell):
     def _pmf_to_cdf(self, pmf, tail_mass, pmf_length, max_length):
         # cdf = torch.zeros((len(pmf_length), max_length + 2), dtype=torch.int32)
         # change
-        cdf = ops.Zeros((len(pmf_length), max_length + 2), dtype=mindspore.int32)
+        zeros = ops.Zeros()
+        cdf = zeros((len(pmf_length), max_length + 2), dtype=mindspore.int32)
         for i, p in enumerate(pmf):
             # prob = torch.cat((p[:pmf_length[i]], tail_mass[i]), dim=0)
             # change
-            prob = ops.Concat((p[:pmf_length[i]], tail_mass[i]), axis=0)
+            concat = ops.Concat()
+            prob = concat((p[:pmf_length[i]], tail_mass[i]), axis=0)
             _cdf = pmf_to_quantized_cdf(prob, self.entropy_coder_precision)
             cdf[i, :_cdf.size(0)] = _cdf
         return cdf
@@ -361,11 +364,13 @@ class EntropyBottleneck(EntropyModel):
         # change
 
         minima = medians - self.quantiles[:, 0, 0]
-        minima = ops.Rint(ops.Ceil(minima))
+        rint = ops.Rint()
+        ceil = ops.Ceil()
+        minima = rint(ops.ceil(minima))
         # minima = torch.clamp(minima, min=0)  TODO BY J: no clamp in mindspore
 
         maxima = self.quantiles[:, 0, 2] - medians
-        maxima = ops.Rint(ops.Ceil(maxima))
+        maxima = rint(ceil(maxima))
         # maxima = torch.clamp(maxima, min=0)  TODO BY J: no clamp in mindspore
 
         self._offset = -minima
@@ -387,16 +392,19 @@ class EntropyBottleneck(EntropyModel):
         # sign = -torch.sign(lower + upper)
         # pmf = torch.abs(
         #     torch.sigmoid(sign * upper) - torch.sigmoid(sign * lower))
-        sign = -ops.Sign(lower + upper)
-        pmf = ops.Abs(
-            ops.Sigmoid(sign * upper) - ops.Sigmoid(sign * lower))
+        sign = ops.Sign()
+        abs = ops.Abs()
+        sigmoid = ops.Sigmoid()
+        sign = -sign(lower + upper)
+        pmf = abs(
+            sigmoid(sign * upper) - sigmoid(sign * lower))
 
         pmf = pmf[:, 0, :]
         # tail_mass = torch.sigmoid(lower[:, 0, :1]) +\
         #     torch.sigmoid(-upper[:, 0, -1:])
         # change
-        tail_mass = ops.Sigmoid(lower[:, 0, :1]) + \
-                    ops.Sigmoid(-upper[:, 0, -1:])
+        tail_mass = sigmoid(lower[:, 0, :1]) + \
+                    sigmoid(-upper[:, 0, -1:])
 
         quantized_cdf = self._pmf_to_cdf(pmf, tail_mass, pmf_length,
                                          max_length)
@@ -407,7 +415,8 @@ class EntropyBottleneck(EntropyModel):
         logits = self._logits_cumulative(self.quantiles, stop_gradient=True)
         # loss = torch.abs(logits - self.target).sum()
         # change
-        loss = ops.Abs(logits - self.target).sum()
+        abs = ops.Abs()
+        loss = abs(logits - self.target).sum()
         return loss
 
     def _logits_cumulative(self, inputs, stop_gradient):
@@ -420,7 +429,9 @@ class EntropyBottleneck(EntropyModel):
             #     matrix = matrix.detach()
             # logits = torch.matmul(F.softplus(matrix), logits) #矩阵与input相乘，每一层乘在一起
             # change
-            logits = ops.Matmul(ops.Softplus(matrix), logits)  # 矩阵与input相乘，每一层乘在一起
+            matmul = ops.Matmul()
+            softplus = ops.Softplus()
+            logits = matmul(softplus(matrix), logits)  # 矩阵与input相乘，每一层乘在一起
 
             bias = self._biases[i]
             # change no detach in mindspore
@@ -435,7 +446,8 @@ class EntropyBottleneck(EntropyModel):
                 #     factor = factor.detach()
                 # logits += torch.tanh(factor) * torch.tanh(logits)
                 # change
-                logits += ops.Tanh(factor) * ops.Tanh(logits)
+                tanh = ops.Tanh()
+                logits += tanh(factor) * tanh(logits)
         return logits
 
     # 未用, 未修改
@@ -458,7 +470,8 @@ class EntropyBottleneck(EntropyModel):
         # shape = x.size()
         # values = x.reshape(x.size(0), 1, -1) #一维向量
         # change
-        x = ops.Transpose(x, (1, 2, 3, 0))
+        transpose = ops.Transpose()
+        x = transpose(x, (1, 2, 3, 0))
         shape = x.shape
         values = x.reshape((x.shape[0], 1, -1))  # 一维向量
 
@@ -476,7 +489,8 @@ class EntropyBottleneck(EntropyModel):
         #     # TorchScript not yet supported
         #     likelihood = torch.zeros_like(outputs)
         # change
-        likelihood = ops.ZerosLike(outputs)
+        zerosLike = ops.ZerosLike()
+        likelihood = zerosLike(outputs)
 
 
         # Convert back to input tensor shape
@@ -487,10 +501,11 @@ class EntropyBottleneck(EntropyModel):
         # likelihood = likelihood.permute(3, 0, 1, 2).contiguous()
         # change
         outputs = outputs.reshape(shape)
-        outputs = ops.Transpose(outputs, (3, 0, 1, 2))
+        transpose = ops.Transpose()
+        outputs = transpose(outputs, (3, 0, 1, 2))
 
         likelihood = likelihood.reshape(shape)
-        likelihood = ops.Transpose(likelihood, (3, 0, 1, 2))
+        likelihood = transpose(likelihood, (3, 0, 1, 2))
 
         return outputs, likelihood
 
@@ -711,7 +726,8 @@ class GaussianMixtureConditional(EntropyModel):
         half = float(0.5)
         const = float(-(2**-0.5))
         # Using the complementary error function maximizes numerical precision.
-        return half * ops.Erfc(const * inputs)
+        erfc = ops.Erfc()
+        return half * erfc(const * inputs)
 
     @staticmethod
     def _standardized_quantile(quantile):
@@ -733,7 +749,8 @@ class GaussianMixtureConditional(EntropyModel):
         # max_length = torch.max(pmf_length).item()
         # change
         multiplier = -self._standardized_quantile(self.tail_mass / 2)
-        pmf_center = ops.Ceil(self.scale_table * multiplier).int()
+        ceil = ops.Ceil()
+        pmf_center = ceil(self.scale_table * multiplier).int()
         pmf_length = 2 * pmf_center + 1
         max_length = pmf_length.max()
 
@@ -746,7 +763,8 @@ class GaussianMixtureConditional(EntropyModel):
         # lower = self._standardized_cumulative((-.5 - samples) / samples_scale)
         # pmf = upper - lower
         # change
-        samples = ops.Abs(
+        abs = ops.Abs()
+        samples = abs(
             Tensor(mindspore.numpy.arange(max_length), mindspore.float32).int() - pmf_center[:, None])
         samples_scale = self.scale_table.unsqueeze(1)
         samples = samples.float()
@@ -785,7 +803,8 @@ class GaussianMixtureConditional(EntropyModel):
 
             # values = torch.abs(values)
             # change
-            values = ops.Abs(values)
+            abs = ops.Abs()
+            values = abs(values)
             upper = self._standardized_cumulative((half - values) / temp_scales)
             lower = self._standardized_cumulative((-half - values) / temp_scales)
             if likelihood==None:
