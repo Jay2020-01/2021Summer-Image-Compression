@@ -13,12 +13,22 @@
 # limitations under the License.
 
 # import torch
+import os
+import sys
+sys.path.insert(0, "../../")
+print("当前的工作目录：",os.getcwd())
+print("python搜索模块的路径集合",sys.path)
+
 import mindspore
+from mindspore import Tensor
 import mindspore.nn as nn
 import mindspore.ops as ops
 # import torch.nn.functional as F
 
 from compressai.ops.parametrizers import NonNegativeParametrizer
+
+
+
 
 
 class GDN(nn.Cell):
@@ -73,9 +83,9 @@ class GDN(nn.Cell):
         gamma = self.gamma_reparam(self.gamma)
         gamma = gamma.reshape(C, C, 1, 1)
         # norm = F.conv2d(x**2, gamma, beta)
-        # change TODO BY J: not sure
-        conv2d = ops.Conv2D()
-        norm = conv2d(x**2, gamma, out_channel=gamma.shape[0], kernel_size=gamma.shape[2]) + beta
+        # change TODO BY J: conv2d no beta
+        conv2d = ops.Conv2D(out_channel=gamma.shape[0], kernel_size=gamma.shape[2])
+        norm = conv2d(x**2, gamma)
 
         if self.inverse:
             # norm = torch.sqrt(norm)
@@ -85,8 +95,8 @@ class GDN(nn.Cell):
         else:
             # norm = torch.rsqrt(norm)
             # change
-            rsqrt = ops.Rsqrt()
-            norm = rsqrt(norm)
+            sqrt = ops.Sqrt()
+            norm = 1. / sqrt(norm)
 
         out = x * norm
 
@@ -111,9 +121,9 @@ class GDN1(GDN):
         gamma = self.gamma_reparam(self.gamma)
         gamma = gamma.reshape(C, C, 1, 1)
         # norm = F.conv2d(torch.abs(x), gamma, beta)
-        # change TODO BY J: not sure
-        conv2d = ops.Conv2D()
-        norm = conv2d(mindspore.Tensor.abs(x), gamma, out_channel=gamma.shape[0], kernel_size=gamma.shape[2]) + beta
+        # change TODO BY J: conv2d no beta
+        conv2d = ops.Conv2D(out_channel=gamma.shape[0], kernel_size=gamma.shape[2])
+        norm = conv2d(mindspore.Tensor.abs(x), gamma)
 
         if not self.inverse:
             norm = 1. / norm
@@ -128,4 +138,4 @@ if __name__ == '__main__':
     zeros = ops.Zeros()
     x = zeros((192,192,2,2), mindspore.float32)
     y = a.construct(x)
-    print(y.size())
+    print(y.shape)

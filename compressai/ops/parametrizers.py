@@ -43,10 +43,10 @@ class NonNegativeParametrizer(nn.Cell):
 
     def init(self, x):
         sqrt = ops.Sqrt()
-        max = ops.Max()
+        max = ops.Maximum()
         return sqrt(max(x + self.pedestal, self.pedestal))
 
-    def forward(self, x):
+    def construct(self, x):
         out = self.lower_bound(x)
         out = out**2 - self.pedestal
         return out

@@ -309,7 +309,7 @@ class EntropyBottleneck(EntropyModel):
             # change
             matrix = Tensor(shape=(channels, filters[i + 1], filters[i]), dtype=mindspore.float32)
             matrix.fill(init)
-            self._matrices.append(nn.Parameter(matrix))
+            self._matrices.append(mindspore.Parameter(matrix))
 
             # bias = torch.Tensor(channels, filters[i + 1], 1)
             # nn.init.uniform_(bias, -0.5, 0.5)
@@ -317,7 +317,7 @@ class EntropyBottleneck(EntropyModel):
             # change
             bias = Tensor(shape=(channels, filters[i + 1], 1), dtype=mindspore.float32)
             # nn.init.uniform_(bias, -0.5, 0.5) TODO BY J: 跳过初始化
-            self._biases.append(nn.Parameter(bias))
+            self._biases.append(mindspore.Parameter(bias))
 
             if i < len(self.filters):
                 # factor = torch.Tensor(channels, filters[i + 1], 1)
@@ -326,13 +326,13 @@ class EntropyBottleneck(EntropyModel):
                 # change
                 factor = Tensor(shape=(channels, filters[i + 1], 1), dtype=mindspore.float32)
                 factor = mindspore.common.initializer.Zero(factor)
-                self._factors.append(nn.Parameter(factor))
+                self._factors.append(mindspore.Parameter(factor))
 
         # self.quantiles = nn.Parameter(torch.Tensor(channels, 1, 3))
         # init = torch.Tensor([-self.init_scale, 0, self.init_scale])
         # self.quantiles.data = init.repeat(self.quantiles.size(0), 1, 1)
         # change
-        self.quantiles = nn.Parameter(Tensor(shape=(channels, 1, 3), dtype=mindspore.float32))
+        self.quantiles = mindspore.Parameter(Tensor(shape=(channels, 1, 3), dtype=mindspore.float32))
         init = Tensor([-self.init_scale, 0, self.init_scale], mindspore.float32)
         self.quantiles.data = init.repeat((self.quantiles.shape[0], 1, 1))
 

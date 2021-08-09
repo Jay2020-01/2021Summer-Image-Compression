@@ -1,5 +1,5 @@
 import numpy as np
-import pytest
+# import pytest
 
 import mindspore as msp
 
@@ -21,10 +21,12 @@ class LowerBoundFunction(nn.Cell):
     def __init__(self):
         super(LowerBoundFunction, self).__init__()
 
-    def construct(self, input_, bound):
+    @staticmethod
+    def construct(input_, bound):
         return msp.ops.maximum(input_, bound)
 
-    def bprop(self, input_, bound, out, dout): #dout是梯度  out是推理值
+    @staticmethod
+    def bprop(input_, bound, out, dout): #dout是梯度  out是推理值
         # pass_through_if = (input_ >= bound) | (dout < 0)
         pass_through_if = ((input_ >= bound).astype(input_.dtype) + (dout < 0).astype(input_.dtype)).astype('Bool')
         # print(pass_through_if)
@@ -47,13 +49,15 @@ class LowerBound(nn.Cell):
         super().__init__()
         # self.register_buffer('bound', torch.Tensor([float(bound)]))
         # change TODO BY J: no register
-        self.bound = Tensor([float(bound)])
+        self.bound = Tensor([float(bound)], msp.float32)
 
     # @torch.jit.unused
     def lower_bound(self, x):
-        return LowerBoundFunction.apply(x, self.bound)
+        # return LowerBoundFunction.apply(x, self.bound)
+        # change TODO BY J: not sure apply
+        return LowerBoundFunction.construct(x, self.bound)
 
-    def forward(self, x):
+    def construct(self, x):
         # change
         # if torch.jit.is_scripting():
         #     return torch.max(x, self.bound)
