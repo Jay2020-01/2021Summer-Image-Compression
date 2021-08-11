@@ -7,6 +7,10 @@ import random
 import shutil
 import os
 import sys
+sys.path.insert(0, "../")
+print("当前的工作目录：",os.getcwd())
+print("python搜索模块的路径集合",sys.path)
+
 import numpy as np
 import math
 import cv2
@@ -14,7 +18,7 @@ import cv2
 from typing import Any, Callable, List, Optional, Tuple, Union
 
 # 在这里改GMM计算方式
-from compressai.entropy_models import (EntropyBottleneck, GaussianMixtureConditional, GaussianConditional)
+from compressai.entropy_models import (EntropyBottleneck, GaussianMixtureConditional)
 from compressai.layers import GDN, MaskedConv2d
 # from compressai.ans impor  t BufferedRansEncoder, RansDecoder  # pylint: disable=E0611,E0401
 # from compressai.models.utils import update_registered_buffers, conv, deconv
@@ -745,8 +749,11 @@ class HSIC(CompressionModel):
         y1, g1_1, g1_2, g1_3 = self.encoder1(x1)
         z1 = self._h_a1(y1)
         # print(z1.device)
+        # print(z1.shape) (16, 128, 4, 4)
         z1_hat, z1_likelihoods = self.entropy_bottleneck1(z1)
         gmm1 = self._h_s1(z1_hat)  # 三要素
+        # print("-"*20, y1.shape, gmm1[0].shape, gmm1[1].shape, gmm1[2].shape)
+        # (16, 192, 16, 16), (16, 960, 16, 16), (16, 960, 16, 16), (16, 960, 1, 1)
         y1_hat, y1_likelihoods = self.gaussian1(y1, gmm1[0], gmm1[1], gmm1[2])  # sigma
 
         # #save

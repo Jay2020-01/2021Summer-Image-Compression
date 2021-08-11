@@ -1,3 +1,9 @@
+import os
+import sys
+sys.path.insert(0, "../../")
+print("当前的工作目录：",os.getcwd())
+print("python搜索模块的路径集合",sys.path)
+
 import numpy as np
 import scipy.stats
 
@@ -9,6 +15,8 @@ import mindspore
 from mindspore import Tensor
 import mindspore.nn as nn
 import mindspore.ops as ops
+import mindspore.numpy as nps
+from mindspore.common.initializer import initializer, Zero, One
 
 from compressai._CXX import \
     pmf_to_quantized_cdf as _pmf_to_quantized_cdf  # pylint: disable=E0611,E0401
@@ -90,9 +98,9 @@ class EntropyModel(nn.Cell):
         # self.register_buffer('_quantized_cdf', torch.IntTensor())
         # self.register_buffer('_cdf_length', torch.IntTensor())
         # change TODO BY J: no register in mindspore
-        self._offset = Tensor(dtype=mindspore.int32)
-        self._quantized_cdf = Tensor(dtype=mindspore.int32)
-        self._cdf_length = Tensor(dtype=mindspore.int32)
+        self._offset = None
+        self._quantized_cdf = None
+        self._cdf_length = None
 
     def construct(self, *args):
         raise NotImplementedError()
@@ -123,14 +131,14 @@ class EntropyModel(nn.Cell):
             inputs = inputs + noise
             return inputs
 
-        outputs = inputs.clone()
+        outputs = inputs
         if means is not None:
             outputs -= means
 
         # outputs = torch.round(outputs)
         # change
         round = ops.Round()
-        outputs = round(outputs)
+        # outputs = round(outputs) TODO BY J: ops.Round is not support
 
         if mode == 'dequantize':
             if means is not None:
@@ -307,16 +315,15 @@ class EntropyBottleneck(EntropyModel):
             # matrix.data.fill_(init)
             # self._matrices.append(nn.Parameter(matrix))
             # change
-            matrix = Tensor(shape=(channels, filters[i + 1], filters[i]), dtype=mindspore.float32)
-            matrix.fill(init)
+            matrix = initializer(init, shape=(channels, filters[i + 1], filters[i]), dtype=mindspore.float32)
             self._matrices.append(mindspore.Parameter(matrix))
 
             # bias = torch.Tensor(channels, filters[i + 1], 1)
             # nn.init.uniform_(bias, -0.5, 0.5)
             # self._biases.append(nn.Parameter(bias))
             # change
-            bias = Tensor(shape=(channels, filters[i + 1], 1), dtype=mindspore.float32)
-            # nn.init.uniform_(bias, -0.5, 0.5) TODO BY J: 跳过初始化
+            bias = np.random.uniform(0.5, -0.5, (channels, filters[i + 1], 1))
+            bias = Tensor(bias, mindspore.float32)
             self._biases.append(mindspore.Parameter(bias))
 
             if i < len(self.filters):
@@ -324,17 +331,18 @@ class EntropyBottleneck(EntropyModel):
                 # nn.init.zeros_(factor)
                 # self._factors.append(nn.Parameter(factor))
                 # change
-                factor = Tensor(shape=(channels, filters[i + 1], 1), dtype=mindspore.float32)
-                factor = mindspore.common.initializer.Zero(factor)
+                zeros = ops.Zeros()
+                factor = zeros((channels, filters[i + 1], 1), mindspore.float32)
                 self._factors.append(mindspore.Parameter(factor))
 
         # self.quantiles = nn.Parameter(torch.Tensor(channels, 1, 3))
         # init = torch.Tensor([-self.init_scale, 0, self.init_scale])
         # self.quantiles.data = init.repeat(self.quantiles.size(0), 1, 1)
         # change
-        self.quantiles = mindspore.Parameter(Tensor(shape=(channels, 1, 3), dtype=mindspore.float32))
+        self.quantiles = mindspore.Parameter(Tensor(shape=(channels, 1, 3), dtype=mindspore.float32, init=Zero()))
         init = Tensor([-self.init_scale, 0, self.init_scale], mindspore.float32)
-        self.quantiles.data = init.repeat((self.quantiles.shape[0], 1, 1))
+        # self.quantiles.data = init.repeat((self.quantiles.shape[0], 1, 1))
+        self.quantiles = mindspore.Parameter(mindspore.numpy.repeat(init, self.quantiles.shape[0]).reshape((-1, 1, 3)))
 
         # target = np.log(2 / self.tail_mass - 1)
         # self.register_buffer('target', torch.Tensor([-target, 0, target]))
@@ -703,7 +711,7 @@ class GaussianMixtureConditional(EntropyModel):
         #     torch.Tensor([float(scale_bound)])
         #     if scale_bound is not None else None)
         # change TODO BY J:  no register in mindspore
-        self.scale_table = self._prepare_scale_table(scale_table) if scale_table else Tensor()
+        self.scale_table = self._prepare_scale_table(scale_table) if scale_table else None
 
         self.scale_bound = Tensor([float(scale_bound)], mindspore.float32) if scale_bound is not None else None
 
@@ -726,8 +734,8 @@ class GaussianMixtureConditional(EntropyModel):
         half = float(0.5)
         const = float(-(2**-0.5))
         # Using the complementary error function maximizes numerical precision.
-        erfc = ops.Erfc()
-        return half * erfc(const * inputs)
+        erfc = ops.Erfc() # TODO BY J: ops.Erfc not support
+        return half * (const * inputs)
 
     @staticmethod
     def _standardized_quantile(quantile):
@@ -839,3 +847,22 @@ class GaussianMixtureConditional(EntropyModel):
         for s in self.scale_table[:-1]:
             indexes -= (scales <= s).int()
         return indexes  #统计数量
+
+
+if __name__ == '__main__':
+    # test1
+    # a = EntropyBottleneck(128)
+    # zeros = ops.Zeros()
+    # x = zeros((16, 128, 4, 4), mindspore.float32)
+    # out, likeli = a.construct(x)
+    # print(out.shape, likeli.shape)
+
+    # test2
+    GMC = GaussianMixtureConditional(K = 5)
+    zeros = ops.Zeros()
+    y = zeros((16, 192, 16, 16), mindspore.float32)
+    g1 = zeros((16, 960, 16, 16), mindspore.float32)
+    g2 = zeros((16, 960, 16, 16), mindspore.float32)
+    g3 = zeros((16, 960, 1, 1), mindspore.float32)
+    y1_hat, y1_likelihoods = GMC.construct(y, g1, g2, g3)
+    print(y1_hat.shape, y1_likelihoods.shape)
