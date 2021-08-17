@@ -83,7 +83,7 @@ class GDN(nn.Cell):
         gamma = self.gamma_reparam(self.gamma)
         gamma = gamma.reshape(C, C, 1, 1)
         # norm = F.conv2d(x**2, gamma, beta)
-        # change TODO BY J: conv2d no beta
+        # change # conv2d no beta
         conv2d = ops.Conv2D(out_channel=gamma.shape[0], kernel_size=gamma.shape[2])
         norm = conv2d(x**2, gamma)
 
@@ -121,7 +121,7 @@ class GDN1(GDN):
         gamma = self.gamma_reparam(self.gamma)
         gamma = gamma.reshape(C, C, 1, 1)
         # norm = F.conv2d(torch.abs(x), gamma, beta)
-        # change TODO BY J: conv2d no beta
+        # change # conv2d no beta
         conv2d = ops.Conv2D(out_channel=gamma.shape[0], kernel_size=gamma.shape[2])
         norm = conv2d(mindspore.Tensor.abs(x), gamma)
 

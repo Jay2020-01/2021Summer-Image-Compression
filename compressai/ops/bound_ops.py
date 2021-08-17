@@ -48,13 +48,13 @@ class LowerBound(nn.Cell):
     def __init__(self, bound):
         super().__init__()
         # self.register_buffer('bound', torch.Tensor([float(bound)]))
-        # change TODO BY J: no register
+        # change # no register
         self.bound = Tensor([float(bound)], msp.float32)
 
     # @torch.jit.unused
     def lower_bound(self, x):
         # return LowerBoundFunction.apply(x, self.bound)
-        # change TODO BY J: not sure apply
+        # change # not sure apply
         return LowerBoundFunction.construct(x, self.bound)
 
     def construct(self, x):

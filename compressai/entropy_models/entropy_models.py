@@ -97,7 +97,7 @@ class EntropyModel(nn.Cell):
         # self.register_buffer('_offset', torch.IntTensor())
         # self.register_buffer('_quantized_cdf', torch.IntTensor())
         # self.register_buffer('_cdf_length', torch.IntTensor())
-        # change TODO BY J: no register in mindspore
+        # change # no register in mindspore
         self._offset = None
         self._quantized_cdf = None
         self._cdf_length = None
@@ -126,7 +126,7 @@ class EntropyModel(nn.Cell):
             #     noise = torch.empty_like(inputs).uniform_(-half, half)
             # else:
             #     noise = self._get_noise_cached(inputs)
-            # change TODO BY J: no torch.jit.is_scripting()
+            # change # no torch.jit.is_scripting()
             noise = self._get_noise_cached(inputs)
             inputs = inputs + noise
             return inputs
@@ -300,7 +300,7 @@ class EntropyBottleneck(EntropyModel):
         # self._biases = nn.ParameterList()
         # self._factors = nn.ParameterList()
         # self._matrices = nn.ParameterList()
-        # change TODO BY J: not sure parameterlist->list
+        # change # not sure parameterlist->list
         self._biases = []
         self._factors = []
         self._matrices = []
@@ -348,7 +348,7 @@ class EntropyBottleneck(EntropyModel):
         # self.register_buffer('target', torch.Tensor([-target, 0, target]))
         # change
         target = np.log(2 / self.tail_mass - 1)
-        self.target = Tensor([-target, 0, target], mindspore.float32)  # TODO BY J: no register in mindspore
+        self.target = Tensor([-target, 0, target], mindspore.float32)  # no register in mindspore
 
     def _medians(self):
         medians = self.quantiles[:, :, 1:2]
@@ -710,7 +710,7 @@ class GaussianMixtureConditional(EntropyModel):
         #     'scale_bound',
         #     torch.Tensor([float(scale_bound)])
         #     if scale_bound is not None else None)
-        # change TODO BY J:  no register in mindspore
+        # change # no register in mindspore
         self.scale_table = self._prepare_scale_table(scale_table) if scale_table else None
 
         self.scale_bound = Tensor([float(scale_bound)], mindspore.float32) if scale_bound is not None else None
