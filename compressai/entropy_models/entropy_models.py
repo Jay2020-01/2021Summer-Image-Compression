@@ -850,19 +850,19 @@ class GaussianMixtureConditional(EntropyModel):
 
 
 if __name__ == '__main__':
-    # test1
-    # a = EntropyBottleneck(128)
-    # zeros = ops.Zeros()
-    # x = zeros((16, 128, 4, 4), mindspore.float32)
-    # out, likeli = a.construct(x)
-    # print(out.shape, likeli.shape)
-
-    # test2
-    GMC = GaussianMixtureConditional(K = 5)
+    # test for EntropyBottleneck
+    a = EntropyBottleneck(128)
     zeros = ops.Zeros()
-    y = zeros((16, 192, 16, 16), mindspore.float32)
-    g1 = zeros((16, 960, 16, 16), mindspore.float32)
-    g2 = zeros((16, 960, 16, 16), mindspore.float32)
-    g3 = zeros((16, 960, 1, 1), mindspore.float32)
-    y1_hat, y1_likelihoods = GMC.construct(y, g1, g2, g3)
-    print(y1_hat.shape, y1_likelihoods.shape)
+    x = zeros((16, 128, 4, 4), mindspore.float32)
+    out, likeli = a.construct(x)
+    print(out.shape, likeli.shape)
+
+    # test for GaussianMixtureConditional
+    # GMC = GaussianMixtureConditional(K = 5)
+    # zeros = ops.Zeros()
+    # y = zeros((16, 192, 16, 16), mindspore.float32)
+    # g1 = zeros((16, 960, 16, 16), mindspore.float32)
+    # g2 = zeros((16, 960, 16, 16), mindspore.float32)
+    # g3 = zeros((16, 960, 1, 1), mindspore.float32)
+    # y1_hat, y1_likelihoods = GMC.construct(y, g1, g2, g3)
+    # print(y1_hat.shape, y1_likelihoods.shape)
